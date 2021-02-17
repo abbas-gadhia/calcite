@@ -28,13 +28,12 @@ immediately, but we want to deploy documentation of project features only when t
 in a release.
 
 The procedure for deploying changes to the website is outlined below:
-1. Push the commit with the changes to the `master` branch of this repository.
-2. Cherry-pick the commit from the `master` branch to the `site` branch of this repository.
+1. Push the commit with the changes to the `main` branch of this repository.
+2. Cherry-pick the commit from the `main` branch to the `site` branch of this repository.
 3. Checkout the `site` branch and build the website either [manually](#manually) or using
-[docker-compose](#using-docker) (preferred).
-4. Commit the generated content to the `master` branch of the `calcite-site` repository following
-the [Pushing to site](#pushing-to-site) instructions.
-
+   [docker-compose](#using-docker) (preferred).
+4. Commit the generated content to the `main` branch of the `calcite-site` repository following
+   the [Pushing to site](#pushing-to-site) instructions.
 ## Manually
 
 ### Setup your environment
