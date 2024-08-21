@@ -80,7 +80,7 @@ jobs:
         call sqlsh.bat -o headers "select count(*) commits, author from (select substring(author, 1, position(' <' in author)-1) author from git_commits) group by author order by count(*) desc, author limit 20"
 
   linux-avatica:
-    if: github.event.action != 'labeled'
+    if: github.event.action != 'labeled' && false
     name: 'Linux (JDK 11), Avatica main'
     runs-on: ubuntu-latest
     steps:
@@ -90,7 +90,7 @@ jobs:
         java-version: 11
     - name: 'Clone Avatica to Maven Local repository'
       run: |
-        git clone --branch main --depth 100 https://github.com/apache/calcite-avatica.git ../calcite-avatica
+        git clone --branch rel/avatica-1.20.0 --depth 100 https://github.com/apache/calcite-avatica.git ../calcite-avatica
     - uses: burrunan/gradle-cache-action@v1
       name: Build Avatica
       env:
@@ -103,6 +103,7 @@ jobs:
         arguments: publishToMavenLocal
         properties: |
           calcite.avatica.version=1.0.0-dev-main
+          com.github.vlsi.vlsi-release-plugins.version=1.83
           skipJavadoc=
     - uses: actions/checkout@v2
       with:
