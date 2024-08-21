@@ -29,6 +29,17 @@ import net.ltgt.gradle.errorprone.errorprone
 import org.apache.calcite.buildtools.buildext.dsl.ParenthesisBalancer
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
+buildscript {
+    configurations {
+        classpath {
+            resolutionStrategy {
+                force("org.ajoberstar.grgit:grgit-gradle:4.1.1")
+                force("org.ajoberstar.grgit:grgit-core:4.1.1")
+            }
+        }
+    }
+}
+
 plugins {
     // java-base is needed for platform(...) resolution,
     // see https://github.com/gradle/gradle/issues/14822
