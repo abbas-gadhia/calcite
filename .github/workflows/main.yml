@@ -124,7 +124,7 @@ jobs:
   linux-openj9:
     if: github.event.action != 'labeled'
     name: 'Linux (OpenJ9 8)'
-    runs-on: macos-latest
+    runs-on: macos-12
     steps:
       - uses: actions/checkout@v2
         with:
@@ -134,6 +134,9 @@ jobs:
           impl: openj9
           version: '8'
           architecture: x64
+          sourceType : url
+          archiveExtension: .tar
+          source: https://github.com/ibmruntimes/semeru8-binaries/releases/download/jdk8u302-b08_openj9-0.27.0/ibm-semeru-open-jdk_x64_mac_8u302b08_openj9-0.27.0.tar.gz
       - uses: burrunan/gradle-cache-action@v1
         name: Test
         env:
