@@ -16,6 +16,7 @@
  */
 plugins {
     `java-platform`
+    `maven-publish`
 }
 
 val String.v: String get() = rootProject.extra["$this.version"] as String
@@ -161,5 +162,30 @@ dependencies {
         runtimev("xalan:xalan")
         runtimev("xerces:xercesImpl")
         apiv("com.google.code.findbugs:jsr305")
+    }
+}
+
+configure<PublishingExtension> {
+    repositories {
+        maven {
+            name = "AbbasGadhiaCalcitePackages"
+            url = uri("https://maven.pkg.github.com/abbas-gadhia/calcite")
+            credentials {
+                username = "abbas.gadhia"
+                password = System.getenv("PUBLISH_PAT")
+            }
+        }
+    }
+
+    val archivesBaseName = "calcite-$name"
+    setProperty("archivesBaseName", archivesBaseName)
+
+    publications {
+        create<MavenPublication>(project.name) {
+            artifactId = archivesBaseName
+            version = rootProject.version.toString()
+            description = project.description
+            afterEvaluate { from(components["javaPlatform"]) }
+        }
     }
 }

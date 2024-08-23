@@ -22,7 +22,6 @@ import com.github.vlsi.gradle.git.FindGitAttributes
 import com.github.vlsi.gradle.git.dsl.gitignore
 import com.github.vlsi.gradle.properties.dsl.lastEditYear
 import com.github.vlsi.gradle.properties.dsl.props
-import com.github.vlsi.gradle.release.RepositoryType
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApis
 import de.thetaphi.forbiddenapis.gradle.CheckForbiddenApisExtension
 import net.ltgt.gradle.errorprone.errorprone
@@ -64,7 +63,6 @@ plugins {
     id("com.github.vlsi.crlf")
     id("com.github.vlsi.gradle-extensions")
     id("com.github.vlsi.license-gather") apply false
-    id("com.github.vlsi.stage-vote-release")
     id("com.autonomousapps.dependency-analysis") apply false
 }
 
@@ -123,51 +121,18 @@ val gitProps by tasks.registering(FindGitAttributes::class) {
 }
 
 val rat by tasks.getting(org.nosphere.apache.rat.RatTask::class) {
+    failOnError.set(false)
     gitignore(gitProps)
     verbose.set(true)
     // Note: patterns are in non-standard syntax for RAT, so we use exclude(..) instead of excludeFile
     exclude(rootDir.resolve(".ratignore").readLines())
 }
 
-tasks.validateBeforeBuildingReleaseArtifacts {
-    dependsOn(rat)
-}
-
 val String.v: String get() = rootProject.extra["$this.version"] as String
 
-val buildVersion = "calcite".v + releaseParams.snapshotSuffix
+val buildVersion = "calcite".v
 
 println("Building Apache Calcite $buildVersion")
-
-releaseArtifacts {
-    fromProject(":release")
-}
-
-// Configures URLs to SVN and Nexus
-releaseParams {
-    tlp.set("Calcite")
-    componentName.set("Apache Calcite")
-    releaseTag.set("calcite-$buildVersion")
-    rcTag.set(rc.map { "calcite-$buildVersion-rc$it" })
-    sitePreviewEnabled.set(false)
-    nexus {
-        // https://github.com/marcphilipp/nexus-publish-plugin/issues/35
-        packageGroup.set("org.apache.calcite")
-        if (repositoryType.get() == RepositoryType.PROD) {
-            // org.apache.calcite at repository.apache.org
-            stagingProfileId.set("778fd0d4358bb")
-        }
-    }
-    svnDist {
-        staleRemovalFilters {
-            includes.add(Regex(".*apache-calcite-\\d.*"))
-            validates.empty()
-            validates.add(provider {
-                Regex("release/calcite/apache-calcite-${version.toString().removeSuffix("-SNAPSHOT")}")
-            })
-        }
-    }
-}
 
 val javadocAggregate by tasks.registering(Javadoc::class) {
     group = JavaBasePlugin.DOCUMENTATION_GROUP
@@ -297,7 +262,10 @@ fun com.github.autostyle.gradle.BaseFormatExtension.license() {
 
 allprojects {
     group = "org.apache.calcite"
-    version = buildVersion
+
+    // Passed during in the semantic-release invocation via package.json
+    val envSemanticVersion = providers.gradleProperty("semantic-release-next-version")
+    version = envSemanticVersion.getOrElse(buildVersion)
 
     apply(plugin = "com.github.vlsi.gradle-extensions")
 
@@ -820,6 +788,16 @@ allprojects {
             if (!project.props.bool("nexus.publish", default = true)) {
                 // Some of the artifacts do not need to be published
                 return@configure
+            }
+            repositories {
+                maven {
+                    name = "AbbasGadhiaCalcitePackages"
+                    url = uri("https://maven.pkg.github.com/abbas-gadhia/calcite")
+                    credentials {
+                        username = "abbas.gadhia"
+                        password = System.getenv("PUBLISH_PAT")
+                    }
+                }
             }
             publications {
                 create<MavenPublication>(project.name) {
