@@ -79,6 +79,14 @@ jobs:
         echo sqlsh
         call sqlsh.bat -o headers "select count(*) commits, author from (select substring(author, 1, position(' <' in author)-1) author from git_commits) group by author order by count(*) desc, author limit 20"
 
+  # The story of this build goes as follows
+  # This build is building calcite with the latest and greatest version of avatica on github, to check if calcite
+  # is backwards compatible with newer avatica releases.
+  # apparently, the current version i.e 1.30 does not work with it. 2 reasons
+  # 1. some avatica code has been deprecated and the calcite (strict) build fails since it is using the deprecated fns
+  # 2. post un-stricting the compilation of calcite, about 12 tests fail with timezone related issues
+  # We are commenting this out rather than trying to figure out the source of the failure, since making the current
+  # version of calcite backwards compatible with the latest version of avatica is not a business goal
   linux-avatica:
     if: github.event.action != 'labeled' && false
     name: 'Linux (JDK 11), Avatica main'
@@ -125,6 +133,7 @@ jobs:
   linux-openj9:
     if: github.event.action != 'labeled'
     name: 'Linux (OpenJ9 8)'
+    # need to run on macos-12. macos-latest has challenges building calcite with the jdk mentioned below
     runs-on: macos-12
     steps:
       - uses: actions/checkout@v2
@@ -134,6 +143,9 @@ jobs:
         with:
           impl: openj9
           version: '8'
+          # See source property below. It is fixing the jdk minor version release to one in which IBM has not deprecated
+          # its LoginAuth modules, which causes build failures due to hadoop (and consequently pig/piglet modules)
+          # being incompatible with the newer login modules
           architecture: x64
           sourceType : url
           archiveExtension: .tar
@@ -300,3 +312,38 @@ jobs:
         job-id: Druid8
         remote-build-cache-proxy-enabled: false
         arguments: --scan --no-parallel --no-daemon :druid:test -Dcalcite.test.druid=true
+
+  semantic-release:
+    name: 'Release job'
+    needs:
+      - linux-druid
+      - linux-slow
+      - linux-checkerframework
+      - errorprone
+      - mac
+      - linux-openj9
+      - windows
+      - linux-avatica
+    if: ${{ always() && !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 50
+    - name: 'Setup npm'
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+    - name: 'Install semantic release and plugin dependencies'
+      run: npm ci
+    - name: 'Release'
+      env:
+        GITHUB_TOKEN: ${{ secrets.PUBLISH_PAT }}
+        PUBLISH_PAT: ${{ secrets.PUBLISH_PAT }}
+      # see the plugins section of package.json for the steps taken for making the release
+      run: npx semantic-release

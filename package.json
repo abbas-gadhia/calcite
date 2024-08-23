@@ -1,0 +1,34 @@
+{
+  "name": "ab-calcite",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "devDependencies": {
+    "@semantic-release/exec": "^6.0.3",
+    "semantic-release": "^24.1.0"
+  },
+  "release": {
+    "//": "This block is used by the semantic-release plugin",
+    "branches": [
+      "main", "release-*"
+    ],
+    "repositoryUrl": "https://github.com/abbas-gadhia/calcite.git",
+    "plugins": [
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/exec",
+        {
+          "analyzeCommitsCmd": "echo 'patch'",
+          "publishCmd": "./publish-calcite-artifacts.bash ${nextRelease.version}"
+        }
+      ]
+    ]
+  }
+}
