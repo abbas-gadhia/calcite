@@ -780,6 +780,12 @@ allprojects {
         val archivesBaseName = "calcite-$name"
         setProperty("archivesBaseName", archivesBaseName)
 
+        if (skipJavadoc) {
+            tasks.withType<Javadoc>() {
+                enabled = false
+            }
+        }
+
         configure<PublishingExtension> {
             if (project.path == ":") {
                 // Do not publish "root" project. Java plugin is applied here for DSL purposes only
